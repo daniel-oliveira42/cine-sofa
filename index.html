@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sessão Especial - 1 Ano</title>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --gold: #dfb14e;
+            --gold-bright: #ffdf73;
+            --ticket-bg: #15181f;
+            --text-main: #f8f9fa;
+            --text-muted: #6e7687;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: radial-gradient(circle at center, #1a1e29 0%, #0b0c10 100%);
+            color: var(--text-main);
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-x: hidden;
+            perspective: 1200px; /* Profundidade para o 3D */
+        }
+
+        /* Canvas para as partículas mágicas */
+        #particle-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        h1 {
+            font-family: 'Courier Prime', monospace;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            font-size: 1.8rem;
+            margin-bottom: 4rem;
+            text-shadow: 0 0 20px rgba(223, 177, 78, 0.3);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .tickets-container {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+            width: 100%;
+            max-width: 850px;
+        }
+
+        /* O Ingresso Base com 3D */
+        .ticket {
+            display: flex;
+            background: linear-gradient(145deg, #191c24, #111318);
+            border-radius: 16px;
+            border: 1px solid #2a2f3d;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.05);
+            transform-style: preserve-3d;
+            position: relative;
+            transition: transform 0.1s; /* Rápido para seguir o mouse */
+        }
+
+        /* Camada de brilho móvel interno (Glare) */
+        .glare {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 16px;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 60%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            transform: translateZ(1px);
+        }
+
+        .ticket:hover .glare { opacity: 1; }
+
+        /* Canhoto */
+        .stub {
+            width: 28%;
+            border-right: 2px dashed rgba(223, 177, 78, 0.4);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            background: linear-gradient(135deg, rgba(223, 177, 78, 0.08) 0%, transparent 100%);
+            border-radius: 16px 0 0 16px;
+            transform-style: preserve-3d;
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .stub-content {
+            transform: translateZ(30px); /* Efeito Flutuante */
+        }
+
+        .stub-name {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin: 15px 0;
+            color: var(--gold-bright);
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .validate-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 30px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+        }
+
+        .validate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .stub:hover .validate-btn {
+            background: var(--gold);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px rgba(223, 177, 78, 0.4);
+        }
+
+        .stub:hover .validate-btn::before { left: 100%; }
+
+        /* Corpo Principal */
+        .body {
+            width: 72%;
+            padding: 2.5rem;
+            position: relative;
+            border-radius: 0 16px 16px 0;
+            transform-style: preserve-3d;
+            overflow: hidden;
+        }
+
+        .body-content {
+            transform: translateZ(40px); /* Texto flutua ainda mais alto */
+        }
+
+        .vip-badge {
+            background: var(--gold);
+            color: var(--bg-color);
+            padding: 4px 12px;
+            font-family: 'Courier Prime', monospace;
+            font-weight: bold;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .movie-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 2rem;
+            color: white;
+            line-height: 1.1;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .info-item label {
+            display: block;
+            font-family: 'Courier Prime', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-item span {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold-bright);
+        }
+
+        /* Animações de Validação */
+        .validated .stub {
+            transform: translate3d(-50px, 150px, -100px) rotateZ(-25deg) rotateX(45deg);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .validated {
+            border-color: var(--gold);
+            animation: ticketShake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        .stamp {
+            position: absolute;
+            top: 50%; left: 60%;
+            transform: translate(-50%, -50%) scale(5) translateZ(100px);
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #ff3b3b;
+            border: 6px solid #ff3b3b;
+            padding: 10px 20px;
+            border-radius: 12px;
+            opacity: 0;
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            box-shadow: 0 0 30px rgba(255, 59, 59, 0.4), inset 0 0 15px rgba(255, 59, 59, 0.4);
+            text-shadow: 0 0 10px rgba(255, 59, 59, 0.5);
+        }
+
+        .validated .stamp {
+            animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards;
+            animation-delay: 0.1s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes stampSlam {
+            0% { transform: translate(-50%, -50%) scale(4) rotate(0deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(-12deg); opacity: 0.9; }
+        }
+
+        @keyframes ticketShake {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-10px) rotate(1deg); box-shadow: 0 0 50px rgba(255, 59, 59, 0.3); }
+            40% { transform: translateX(10px) rotate(-1deg); }
+            60% { transform: translateX(-5px) rotate(0deg); }
+            80% { transform: translateX(5px) rotate(0deg); }
+            100% { transform: translateX(0); box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(223, 177, 78, 0.2); }
+        }
+
+        @media (max-width: 768px) {
+            .ticket { flex-direction: column; transform: none !important; } /* Desativa 3D no mobile */
+            .stub { width: 100%; border-right: none; border-bottom: 2px dashed rgba(223, 177, 78, 0.4); border-radius: 16px 16px 0 0; }
+            .body { width: 100%; border-radius: 0 0 16px 16px; }
+            .validated .stub { transform: translate3d(0, -50px, 0) rotateZ(10deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="particle-canvas"></canvas>
+
+    <h1>★ Cine Sofá VIP ★</h1>
+
+    <div class="tickets-container">
+        
+        <!-- Ingresso Nanda -->
+        <div class="ticket" id="ticket-nanda">
+            <div class="glare"></div>
+            <div class="stub" onclick="validateTicket(event, 'ticket-nanda')">
+                <div class="stub-content">
+                    <div style="font-family:'Courier Prime'; color:var(--text-muted); text-transform:uppercase; font-size:0.8rem;">Canhoto</div>
+                    <div class="stub-name">NANDA</div>
+                    <div class="validate-btn">Validar Entrada</div>
+                </div>
+            </div>
+            <div class="body">
+                <div class="stamp">Validado</div>
+                <div class="body-content">
+                    <div class="vip-badge">VIP PASS #00365-A</div>
+                    <div class="movie-title">365 Dias Sem Dor No Ombro</div>
+                    <div class="info-grid">
+                        <div class="info-item"><label>Convidada</label><span>Nanda</span></div>
+                        <div class="info-item"><label>Assento</label><span>Sofá • Colada no Dan</span></div>
+                        <div class="info-item"><label>Horário</label><span>19:00</span></div>
+                        <div class="info-item"><label>Traje</label><span>Conforto Extremo</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ingresso Dan -->
+        <div class="ticket" id="ticket-dan">
+            <div class="glare"></div>
+            <div class="stub" onclick="validateTicket(event, 'ticket-dan')">
+                <div class="stub-content">
+                    <div style="font-family:'Courier Prime'; color:var(--text-muted); text-transform:uppercase; font-size:0.8rem;">Canhoto</div>
+                    <div class="stub-name">DAN</div>
+                    <div class="validate-btn">Validar Entrada</div>
+                </div>
+            </div>
+            <div class="body">
+                <div class="stamp">Validado</div>
+                <div class="body-content">
+                    <div class="vip-badge">VIP PASS #00365-B</div>
+                    <div class="movie-title">365 Dias Sem Dor No Ombro</div>
+                    <div class="info-grid">
+                        <div class="info-item"><label>Anfitrião</label><span>Dan</span></div>
+                        <div class="info-item"><label>Assento</label><span>Sofá • Colado na Nanda</span></div>
+                        <div class="info-item"><label>Horário</label><span>19:00</span></div>
+                        <div class="info-item"><label>Traje</label><span>Conforto Extremo</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* ==============================================================
+           FÍSICA 3D (TILT EFFECT)
+        ============================================================== */
+        const tickets = document.querySelectorAll('.ticket');
+        
+        tickets.forEach(ticket => {
+            ticket.addEventListener('mousemove', (e) => {
+                if(window.innerWidth < 768) return; // Ignora no mobile
+                if(ticket.classList.contains('validated')) return; // Trava após validar
+                
+                const rect = ticket.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Calcula a rotação (-10 a 10 graus) baseado na posição do mouse
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = ((y - centerY) / centerY) * -8;
+                const rotateY = ((x - centerX) / centerX) * 8;
+
+                ticket.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                
+                // Move o reflexo (glare)
+                const glare = ticket.querySelector('.glare');
+                glare.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.15) 0%, transparent 50%)`;
+            });
+
+            ticket.addEventListener('mouseleave', () => {
+                if(ticket.classList.contains('validated')) return;
+                ticket.style.transform = 'rotateX(0) rotateY(0)';
+                ticket.style.transition = 'transform 0.5s ease-out';
+                setTimeout(() => { ticket.style.transition = 'transform 0.1s'; }, 500);
+            });
+        });
+
+        /* ==============================================================
+           DESIGN DE SOM (SYNTH MULTICAMADAS)
+        ============================================================== */
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function playEpicUnlockSound() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const now = audioCtx.currentTime;
+
+            // Camada 1: Impacto grave (Punch) simulando o carimbo batendo
+            const kickOsc = audioCtx.createOscillator();
+            const kickGain = audioCtx.createGain();
+            kickOsc.connect(kickGain);
+            kickGain.connect(audioCtx.destination);
+            
+            kickOsc.frequency.setValueAtTime(150, now);
+            kickOsc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
+            kickGain.gain.setValueAtTime(1, now);
+            kickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            kickOsc.start(now);
+            kickOsc.stop(now + 0.5);
+
+            // Camada 2: Arpejo Mágico (Acorde de conquista)
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, index) => {
+                const timeDelay = now + 0.1 + (index * 0.08);
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'triangle'; // Som mais metálico/brilhante
+                osc.frequency.setValueAtTime(freq, timeDelay);
+                
+                gain.gain.setValueAtTime(0, timeDelay);
+                gain.gain.linearRampToValueAtTime(0.3, timeDelay + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, timeDelay + 1.5);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(timeDelay);
+                osc.stop(timeDelay + 1.5);
+            });
+        }
+
+        /* ==============================================================
+           MOTOR DE PARTÍCULAS (HTML5 CANVAS)
+        ============================================================== */
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                // Velocidade explosiva aleatória
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 8 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.size = Math.random() * 4 + 2;
+                this.life = 1;
+                this.decay = Math.random() * 0.02 + 0.015;
+                // Cores puxadas para o dourado do design
+                this.color = `hsl(${Math.random() * 20 + 40}, 100%, 60%)`; 
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2; // Gravidade puxando pra baixo
+                this.life -= this.decay;
+                this.size *= 0.96; // Encolhe com o tempo
+            }
+            draw() {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if (p.life <= 0 || p.size <= 0.2) {
+                    particles.splice(index, 1);
+                }
+            });
+            if (particles.length > 0) {
+                requestAnimationFrame(animateParticles);
+            }
+        }
+
+        /* ==============================================================
+           LÓGICA DE VALIDAÇÃO
+        ============================================================== */
+        function validateTicket(event, ticketId) {
+            const ticket = document.getElementById(ticketId);
+            if(ticket.classList.contains('validated')) return;
+
+            // Aciona CSS
+            ticket.classList.add('validated');
+            
+            // Reseta 3D para a animação do CSS tomar controle
+            ticket.style.transform = 'rotateX(0) rotateY(0)'; 
+
+            // Áudio
+            playEpicUnlockSound();
+
+            // Explode partículas na posição do clique do mouse
+            let burstX = event.clientX;
+            let burstY = event.clientY;
+            
+            for (let i = 0; i < 50; i++) {
+                particles.push(new Particle(burstX, burstY));
+            }
+            
+            // Inicia o loop de animação do canvas se não estiver rodando
+            if(particles.length <= 50) {
+                requestAnimationFrame(animateParticles);
+            }
+        }
+    </script>
+</body>
+</html>
